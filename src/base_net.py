@@ -31,9 +31,15 @@ class BaseNet(object):
             'model': self.model,
             'optimizer': self.optimizer}, filename)
 
-    def load(self, filename):
+    def load(self, filename, map_location=None):
         cprint('c', 'Reading %s\n' % filename)
-        state_dict = torch.load(filename)
+        # ``weights_only`` defaults to True in newer PyTorch versions, which breaks
+        # loading the full checkpoint object saved by this project. We explicitly
+        # disable it here because the checkpoints are produced locally and include
+        # model/optimizer objects rather than pure tensors.
+        state_dict = torch.load(
+            filename, map_location=map_location, weights_only=False
+        )
         self.epoch = state_dict['epoch']
         self.lr = state_dict['lr']
         self.model = state_dict['model']
