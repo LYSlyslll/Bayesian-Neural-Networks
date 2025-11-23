@@ -109,6 +109,36 @@ For an explanation of the script's arguments:
 python train_MCDropout_MNIST.py -h
 ```
 
+Evaluate a trained MNIST model (e.g. the `theta_best.dat` produced after training),
+run Monte Carlo Dropout for predictive uncertainty, and export metrics/predictions:
+```bash
+python evaluate_MCDropout_MNIST.py --weights MCdrop_models/theta_best.dat \
+  --nsamples 20 --output_dir MCdrop_predictions --save_sample_probs
+```
+The script reports accuracy/NLL on the test set, saves `metrics.json`,
+mean probabilities and predicted labels to `predictions.pt`, and optionally
+stores per-sample probabilities for downstream uncertainty analysis.
+
+Inspect and visualize the saved predictions (calibration curves, uncertainty
+histograms, top-entropy examples, etc.) with the helper below:
+```bash
+python analyze_MCDropout_predictions.py \
+  --predictions MCdrop_predictions/predictions.pt \
+  --output_dir MCdrop_predictions/analysis \
+  --top_uncertain 16 --num_bins 15
+```
+`predictions.pt` contains numpy arrays `pred_labels` (shape: N),
+`mean_probs` (N, 10), and optionally `sample_probs` (Nsamples, N, 10). The
+analysis script reloads the MNIST test-set labels to align predictions,
+exports reliability curves/ECE, confidence & entropy histograms, optional
+mutual-information histograms (when `sample_probs` is present), and a grid of
+the most uncertain examples.
+
+Recent changes in this workflow:
+* `evaluate_MCDropout_MNIST.py` adds a one-shot way to restore saved MC Dropout checkpoints, run Monte Carlo sampling for predictive means and uncertainties, and export metrics plus optional per-sample probabilities for further analysis.
+* `BaseNet.load` accepts an optional `map_location` so checkpoints saved on GPU can be loaded on CPU-only machines without device-mismatch errors.
+* `train_MCDropout_MNIST.py` now uses `plt.grid(True, ...)` arguments that are compatible with newer Matplotlib versions, avoiding the `grid_b` keyword error when saving training curves.
+
 
 ### Stochastic Gradient Langevin Dynamics (SGLD)
 (https://www.ics.uci.edu/~welling/publications/papers/stoclangevin_v6.pdf)
